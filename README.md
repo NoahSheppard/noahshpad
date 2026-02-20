@@ -65,4 +65,4 @@ The PCB in the .3mf vs the KiCad exports will be slightly different, as the name
 
 ## Author
 
-Noah Sheppard
+Noah Sheppard (noahshdev)
