@@ -1,0 +1,1 @@
+Xephyr :2 -ac -screen 320x200x8

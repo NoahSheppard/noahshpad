@@ -6,9 +6,24 @@
 #
 CC=  gcc  # gcc or g++
 
-CFLAGS=-g -Wall -DNORMALUNIX -DLINUX # -DUSEASM 
+CFLAGS=-g -Wall -DNORMALUNIX -DLINUX -DNO_SOUND_RUNTIME -DTINY_E1M1_ONLY # -DUSEASM 
 LDFLAGS=-L/usr/X11R6/lib
 LIBS=-lXext -lX11 -lm
+
+TINYWAD_SOURCE?=$(if $(wildcard linux/doom1.wad.bak),linux/doom1.wad.bak,linux/doom1.wad)
+TINYWAD_OUTPUT?=linux/doom1.wad
+TINYWAD_FLAGS?=--aggressive-ui-strip --strip-sprites-e1m1 --strip-menu-assets --strip-midi-assets --strip-endscreen --minimal-things --canonical-wall-texture DOOR3
+TINYWAD_VARIANT_DIR?=wad_variants
+TINY_STRIP_RUNTIME?=1
+
+ifeq ($(TINY_STRIP_RUNTIME),1)
+CFLAGS += -DTINY_NO_NET -DTINY_NO_SOUND -DTINY_NO_MENU
+SOUND_OBJ=$(O)/i_sound_stub.o
+NET_OBJ=$(O)/i_net_stub.o
+else
+SOUND_OBJ=$(O)/i_sound.o
+NET_OBJ=$(O)/i_net.o
+endif
 
 # subdirectory for objects
 O=linux
@@ -19,9 +34,9 @@ OBJS=				\
 		$(O)/doomstat.o		\
 		$(O)/dstrings.o		\
 		$(O)/i_system.o		\
-		$(O)/i_sound.o		\
+		$(SOUND_OBJ)		\
 		$(O)/i_video.o		\
-		$(O)/i_net.o			\
+		$(NET_OBJ)			\
 		$(O)/tables.o			\
 		$(O)/f_finale.o		\
 		$(O)/f_wipe.o 		\
@@ -78,6 +93,18 @@ OBJS=				\
 		$(O)/sounds.o
 
 all:	 $(O)/linuxxdoom
+
+tinywad:
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_OUTPUT) $(TINYWAD_FLAGS)
+
+tinywad-tests:
+	mkdir -p $(TINYWAD_VARIANT_DIR)
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_VARIANT_DIR)/doom1.test_a.wad --aggressive-ui-strip --strip-sprites-e1m1 --strip-menu-assets --strip-midi-assets --strip-endscreen
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_VARIANT_DIR)/doom1.test_b.wad --aggressive-ui-strip --strip-menu-assets --strip-midi-assets --strip-endscreen --canonical-wall-texture DOOR3
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_VARIANT_DIR)/doom1.test_c.wad --aggressive-ui-strip --strip-sprites-e1m1 --strip-menu-assets --strip-midi-assets --strip-endscreen --canonical-wall-texture DOOR3
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_VARIANT_DIR)/doom1.test_d.wad --aggressive-ui-strip --strip-menu-assets --strip-midi-assets --strip-endscreen --canonical-wall-texture DOOR3 --canonical-floor-flat FLOOR7_2 --canonical-ceil-flat F_SKY1
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_VARIANT_DIR)/doom1.test_e.wad --aggressive-ui-strip --strip-sprites-e1m1 --strip-menu-assets --strip-midi-assets --strip-endscreen --minimal-things --min-sector-light 192
+	./tools/minify_wad.py $(TINYWAD_SOURCE) $(TINYWAD_VARIANT_DIR)/doom1.test_f.wad --aggressive-ui-strip --strip-sprites-e1m1 --strip-menu-assets --strip-midi-assets --strip-endscreen --minimal-things --canonical-wall-texture DOOR3
 
 $(O):
 	mkdir -p $(O)

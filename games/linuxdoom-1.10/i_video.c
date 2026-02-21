@@ -88,6 +88,87 @@ int		doPointerWarp = POINTER_WARP_COUNTDOWN;
 // According to Dave Taylor, it still is a bonehead thing
 // to use ....
 static int	multiply=1;
+static boolean	mono128x32 = false;
+
+#define MONO_WIDTH 128
+#define MONO_HEIGHT 32
+#define MONO_THRESHOLD 96
+
+static byte mono_luma[256];
+static byte mono_dark_index = 0;
+static byte mono_bright_index = 255;
+static byte mono_frame[MONO_WIDTH * MONO_HEIGHT];
+
+static void UpdateMonoPalette(byte* palette)
+{
+	int i;
+	int min_luma = 256;
+	int max_luma = -1;
+
+	for (i = 0; i < 256; i++)
+	{
+		int r = gammatable[usegamma][palette[i * 3 + 0]];
+		int g = gammatable[usegamma][palette[i * 3 + 1]];
+		int b = gammatable[usegamma][palette[i * 3 + 2]];
+		int luma = (30 * r + 59 * g + 11 * b) / 100;
+
+		mono_luma[i] = (byte)luma;
+
+		if (luma < min_luma)
+		{
+			min_luma = luma;
+			mono_dark_index = (byte)i;
+		}
+		if (luma > max_luma)
+		{
+			max_luma = luma;
+			mono_bright_index = (byte)i;
+		}
+	}
+}
+
+static byte* BuildMono128x32Frame(byte* src)
+{
+	int ox;
+	int oy;
+
+	for (oy = 0; oy < MONO_HEIGHT; oy++)
+	{
+		int sy0 = (oy * SCREENHEIGHT) / MONO_HEIGHT;
+		int sy1 = ((oy + 1) * SCREENHEIGHT) / MONO_HEIGHT;
+		if (sy1 <= sy0)
+			sy1 = sy0 + 1;
+
+		for (ox = 0; ox < MONO_WIDTH; ox++)
+		{
+			int sx0 = (ox * SCREENWIDTH) / MONO_WIDTH;
+			int sx1 = ((ox + 1) * SCREENWIDTH) / MONO_WIDTH;
+			int sy;
+			int sx;
+			int sum = 0;
+			int count = 0;
+
+			if (sx1 <= sx0)
+				sx1 = sx0 + 1;
+
+			for (sy = sy0; sy < sy1; sy++)
+			{
+				int row = sy * SCREENWIDTH;
+				for (sx = sx0; sx < sx1; sx++)
+				{
+					sum += mono_luma[src[row + sx]];
+					count++;
+				}
+			}
+
+			mono_frame[oy * MONO_WIDTH + ox] = (sum / count) >= MONO_THRESHOLD
+				? mono_bright_index
+				: mono_dark_index;
+		}
+	}
+
+	return mono_frame;
+}
 
 
 //
@@ -355,6 +436,7 @@ void I_FinishUpdate (void)
     static int	lasttic;
     int		tics;
     int		i;
+	byte*		source;
     // UNUSED static unsigned char *bigscreen=0;
 
     // draws little dots on the bottom of the screen
@@ -373,8 +455,17 @@ void I_FinishUpdate (void)
     
     }
 
-    // scales the screen size before blitting it
-    if (multiply == 2)
+	source = screens[0];
+	if (mono128x32)
+		source = BuildMono128x32Frame(screens[0]);
+
+	if (mono128x32)
+	{
+		memcpy(image->data, source, MONO_WIDTH * MONO_HEIGHT);
+	}
+
+	// scales the screen size before blitting it
+	else if (multiply == 2)
     {
 	unsigned int *olineptrs[2];
 	unsigned int *ilineptr;
@@ -383,7 +474,7 @@ void I_FinishUpdate (void)
 	unsigned int twomoreopixels;
 	unsigned int fouripixels;
 
-	ilineptr = (unsigned int *) (screens[0]);
+	ilineptr = (unsigned int *) source;
 	for (i=0 ; i<2 ; i++)
 	    olineptrs[i] = (unsigned int *) &image->data[i*X_width];
 
@@ -425,7 +516,7 @@ void I_FinishUpdate (void)
 	unsigned int fouropixels[3];
 	unsigned int fouripixels;
 
-	ilineptr = (unsigned int *) (screens[0]);
+	ilineptr = (unsigned int *) source;
 	for (i=0 ; i<3 ; i++)
 	    olineptrs[i] = (unsigned int *) &image->data[i*X_width];
 
@@ -477,8 +568,12 @@ void I_FinishUpdate (void)
     {
 	// Broken. Gotta fix this some day.
 	void Expand4(unsigned *, double *);
-  	Expand4 ((unsigned *)(screens[0]), (double *) (image->data));
+	  Expand4 ((unsigned *)source, (double *) (image->data));
     }
+	else if (multiply == 1 && source != (byte *)image->data)
+	{
+	memcpy(image->data, source, SCREENWIDTH * SCREENHEIGHT);
+	}
 
     if (doShm)
     {
@@ -582,6 +677,7 @@ void UploadNewPalette(Colormap cmap, byte *palette)
 void I_SetPalette (byte* palette)
 {
     UploadNewPalette(X_cmap, palette);
+	UpdateMonoPalette(palette);
 }
 
 
@@ -724,8 +820,19 @@ void I_InitGraphics(void)
     if (M_CheckParm("-4"))
 	multiply = 4;
 
-    X_width = SCREENWIDTH * multiply;
-    X_height = SCREENHEIGHT * multiply;
+    mono128x32 = !!M_CheckParm("-mono128x32");
+
+	if (mono128x32)
+	{
+		multiply = 1;
+		X_width = MONO_WIDTH;
+		X_height = MONO_HEIGHT;
+	}
+	else
+	{
+		X_width = SCREENWIDTH * multiply;
+		X_height = SCREENHEIGHT * multiply;
+	}
 
     // check for command-line display name
     if ( (pnum=M_CheckParm("-disp")) ) // suggest parentheses around assignment
@@ -771,8 +878,13 @@ void I_InitGraphics(void)
 	I_Error("xdoom currently only supports 256-color PseudoColor screens");
     X_visual = X_visualinfo.visual;
 
-    // check for the MITSHM extension
-    doShm = XShmQueryExtension(X_display);
+	// check for the MITSHM extension (opt-in only via -shm)
+	doShm = false;
+	if (M_CheckParm("-shm"))
+		doShm = XShmQueryExtension(X_display);
+
+	if (M_CheckParm("-noshm"))
+		doShm = false;
 
     // even if it's available, make sure it's a local connection
     if (doShm)
@@ -787,7 +899,10 @@ void I_InitGraphics(void)
 	}
     }
 
-    fprintf(stderr, "Using MITSHM extension\n");
+	if (doShm)
+		fprintf(stderr, "Using MITSHM extension\n");
+	else
+		fprintf(stderr, "Using XPutImage (no MITSHM)\n");
 
     // create the colormap
     X_cmap = XCreateColormap(X_display, RootWindow(X_display,
@@ -907,10 +1022,20 @@ void I_InitGraphics(void)
 
     }
 
-    if (multiply == 1)
+    if (multiply == 1 && !mono128x32)
 	screens[0] = (unsigned char *) (image->data);
     else
 	screens[0] = (unsigned char *) malloc (SCREENWIDTH * SCREENHEIGHT);
+
+    if (!screens[0])
+	I_Error("Failed to allocate screen buffer");
+
+    if (mono128x32)
+    {
+	int p;
+	for (p = 0; p < 256; p++)
+	    mono_luma[p] = (byte)p;
+    }
 
 }
 

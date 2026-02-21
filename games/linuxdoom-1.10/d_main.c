@@ -524,9 +524,14 @@ void D_AdvanceDemo (void)
 //
 void D_StartTitle (void)
 {
+#ifdef TINY_E1M1_ONLY
+	gameaction = ga_nothing;
+	G_InitNew(sk_medium, 1, 1);
+#else
     gameaction = ga_nothing;
     demosequence = -1;
     D_AdvanceDemo ();
+#endif
 }
 
 

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include QMK_KEYBOARD_H
+#include "doom/doom_qmk.h"
+#include "tetris/tetris_qmk.h"
 
 enum layer_names {
     _BASE = 0, // binary 001
@@ -17,7 +19,9 @@ enum layer_names {
 enum custom_keycodes {
     BIN0 = SAFE_RANGE,
     BIN1,
-    BIN2
+    BIN2,
+    DOOM_TOG,
+    TETRIS_TOG
 };
 
 static uint8_t bin_state = 0b001;
@@ -91,7 +95,49 @@ static void render_oled_pixels(void) {
     fb_vline(scan_x, 1, OLED_H - 2, true);
 }
 
+static void render_doom_status_overlay(void) {
+    uint8_t base_x = OLED_W - 5;
+    uint8_t base_y = 1;
+
+    if (doom_qmk_has_fault()) {
+        for (uint8_t i = 0; i < 4; i++) {
+            fb_set_pixel(base_x + i, base_y + i, true);
+            fb_set_pixel(base_x + (3 - i), base_y + i, true);
+        }
+        return;
+    }
+
+    if (doom_qmk_is_stalled()) {
+        fb_rect(base_x, base_y, 4, 4, true);
+        return;
+    }
+
+    if (doom_qmk_engine_running()) {
+        bool pulse = (doom_qmk_heartbeat() & 0x08u) != 0;
+        if (pulse) {
+            for (uint8_t y = 0; y < 4; y++) {
+                for (uint8_t x = 0; x < 4; x++) {
+                    fb_set_pixel(base_x + x, base_y + y, true);
+                }
+            }
+        } else {
+            fb_rect(base_x, base_y, 4, 4, true);
+        }
+    }
+}
+
 bool oled_task_user(void) {
+    if (tetris_qmk_oled_task()) {
+        return false;
+    }
+
+    if (doom_qmk_is_active()) {
+        doom_qmk_copy_framebuffer(oled_fb, sizeof(oled_fb));
+        render_doom_status_overlay();
+        oled_write_raw((const char *)oled_fb, sizeof(oled_fb));
+        return false;
+    }
+
     render_oled_pixels();
     oled_write_raw((const char *)oled_fb, sizeof(oled_fb));
     return false; 
@@ -120,11 +166,11 @@ static void render_wave_tail(void) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT(
-        BIN0, BIN1, BIN2, KC_A,
+        BIN0, BIN1, BIN2, DOOM_TOG,
         KC_B, KC_C, KC_D, KC_E 
     ),
     [_L000] = LAYOUT(
-        BIN0, BIN1, BIN2, KC_1,
+        BIN0, BIN1, BIN2, TETRIS_TOG,
         KC_2, KC_3, KC_4, KC_5
     ),
     [_L010] = LAYOUT(
@@ -158,9 +204,14 @@ void keyboard_post_init_user(void) {
     rgblight_enable_noeeprom();
 #endif
     apply_binary_layer();
+    doom_qmk_init();
+    tetris_qmk_init();
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    doom_qmk_set_key(keycode, record->event.pressed);
+    tetris_qmk_set_key(keycode, record->event.pressed);
+
     if (!record->event.pressed) {
         return true;
     }
@@ -178,11 +229,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             bin_state ^= 0b100;
             apply_binary_layer();
             return false;
+        case DOOM_TOG:
+            doom_qmk_toggle();
+            if (doom_qmk_is_active()) {
+                tetris_qmk_set_active(false);
+            }
+            return false;
+        case TETRIS_TOG:
+            tetris_qmk_toggle();
+            if (tetris_qmk_is_active()) {
+                doom_qmk_set_active(false);
+            }
+            return false;
     }
     return true;
 }
 
 void housekeeping_task_user(void) {
+    tetris_qmk_task();
+    doom_qmk_task();
+
 #ifdef RGBLIGHT_ENABLE
     render_wave_tail();
     render_bin_indicators();
