@@ -32,7 +32,9 @@ An 8-key custom macropad with a fancy pantsy OLED screen
 
 Current production outputs included in this repo:
 
-- PCB Gerbers and drill files in `production/gerbers/`
+- PCB Gerbers and drill files -> `production/gerbers/` and `production/gerbers.zip`
+- Full CAD export -> `production/oled-v2.3mf`
+- Bodies -> `production/Base.step` and `Top Plate.step` respectively
 
 ## Author
 
