@@ -1179,6 +1179,12 @@
 		(uuid "20e1da93-b9c3-48d1-9958-00587c815a4c")
 	)
 	(junction
+		(at 30.48 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3559edbc-db49-41ed-9ef9-bb7ee26bd4f8")
+	)
+	(junction
 		(at 30.48 88.9)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1212,7 +1218,7 @@
 		(at 55.88 27.94)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "a6cc9241-c7d2-48d4-b435-d280ef8b3781")
+		(uuid "a2e0b39b-9d60-4433-abad-eabcbf7d6838")
 	)
 	(junction
 		(at 180.34 60.96)
@@ -1293,12 +1299,6 @@
 		(uuid "e464cd7e-0351-49ff-a427-237f8dadbbe7")
 	)
 	(junction
-		(at 30.48 27.94)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e8a687da-a8d7-4674-890d-64162c9c938b")
-	)
-	(junction
 		(at 55.88 119.38)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1309,16 +1309,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f7d0b37d-621c-4ac1-8bdb-cba845838703")
-	)
-	(wire
-		(pts
-			(xy 55.88 25.4) (xy 55.88 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "03a91634-9ef5-481c-ace2-b31054df41d7")
 	)
 	(wire
 		(pts
@@ -1722,6 +1712,16 @@
 	)
 	(wire
 		(pts
+			(xy 30.48 25.4) (xy 30.48 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b7d4d4f6-6cb7-46d2-a2bf-81379627ac8f")
+	)
+	(wire
+		(pts
 			(xy 55.88 134.62) (xy 49.53 134.62)
 		)
 		(stroke
@@ -1742,16 +1742,6 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 25.4) (xy 30.48 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c228fdce-fd9a-453c-8150-2056774ba151")
-	)
-	(wire
-		(pts
 			(xy 208.28 76.2) (xy 217.17 76.2)
 		)
 		(stroke
@@ -1769,6 +1759,16 @@
 			(type default)
 		)
 		(uuid "cd73eb0d-a479-4285-a942-37f3dbfd7875")
+	)
+	(wire
+		(pts
+			(xy 55.88 25.4) (xy 55.88 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d0e91272-69d7-49fd-ab92-1ff8fd04f563")
 	)
 	(wire
 		(pts
@@ -2028,7 +2028,7 @@
 	)
 	(global_label "5V"
 		(shape input)
-		(at 30.48 25.4 90)
+		(at 55.88 25.4 90)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2038,7 +2038,7 @@
 		)
 		(uuid "56f4ed13-4d17-4cb6-bb57-ffa48e9e42a1")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 30.48 20.1167 90)
+			(at 55.88 20.1167 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2402,7 +2402,7 @@
 	)
 	(global_label "LED_GND"
 		(shape input)
-		(at 55.88 25.4 90)
+		(at 30.48 25.4 90)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -2412,7 +2412,7 @@
 		)
 		(uuid "ffdd2157-37ee-466b-ac8a-b56dfd3da456")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 55.88 14.1296 90)
+			(at 30.48 14.1296 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2432,7 +2432,7 @@
 		(dnp no)
 		(uuid "00b7eaec-016d-4863-9ac4-87f68c0dd32e")
 		(property "Reference" "D10"
-			(at 33.528 13.716 90)
+			(at 58.928 13.716 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2440,7 +2440,7 @@
 			)
 		)
 		(property "Value" "LED_SK6812MINI"
-			(at 33.528 16.256 90)
+			(at 58.928 16.256 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2477,7 +2477,7 @@
 			)
 		)
 		(property "LCSC" "C5149201"
-			(at 33.528 18.796 90)
+			(at 58.928 18.796 90)
 			(effects
 				(font
 					(size 1.27 1.27)
